@@ -827,3 +827,78 @@ export const UserInfoData = {
     notificationEnabled: false,
   },
 };
+
+const mockValues = {
+  electric: {
+    instant: [32, 30, 34, 20, 42, 69, 72, 59, 65, 63, 38, 21, 15],
+    accumulated: [12800, 16400, 14200, 18800, 15300, 19600, 16100],
+  },
+  water: {
+    instant: [45, 42, 48, 38, 55, 72, 78, 69, 76, 70, 58, 49, 43],
+    accumulated: [165, 210, 175, 240, 195, 190, 225],
+  },
+  gas: {
+    instant: [110, 105, 112, 95, 130, 165, 170, 150, 160, 155, 135, 120, 108],
+    accumulated: [4200, 4600, 4400, 4900, 4700, 5100, 5100],
+  },
+  co2: {
+    month: [
+      21.5, 22.8, 20.9, 24.1, 23.6, 25.2, 24.8, 26.1, 27.4, 26.8, 28.2, 27.7,
+      29.1, 30.4, 29.8, 31.2, 30.7, 32.1, 33.4, 32.8, 34.2, 35.1, 34.6, 36.2,
+      35.8, 37.1, 36.5, 38.2, 39.1, 40.3,
+    ],
+    year: [620, 675, 648, 710, 735, 760, 805, 831, 790, 845, 870, 910],
+  },
+};
+
+const createPeriodValues = (source, count, factor = 1) =>
+  Array.from({ length: count }, (_, index) =>
+    Math.round(
+      source[index % source.length] * factor * (0.94 + (index % 5) * 0.03),
+    ),
+  );
+
+const getAccumulatedValues = (trendType, period) => {
+  const source = mockValues[trendType];
+
+  if (trendType === "co2") return source[period];
+  if (period === "week") return source.accumulated;
+  if (period === "month") return createPeriodValues(source.accumulated, 30);
+  return createPeriodValues(source.accumulated, 12, 28);
+};
+
+export const createMockTrendData = ({ trendType, date, period }) => {
+  const source = mockValues[trendType];
+  const anchorDate = new Date(`${date}T00:00:00`);
+
+  const instant = (source.instant || []).map((value, index) => {
+    const timestamp = new Date(anchorDate);
+    timestamp.setHours(index * 2, 0, 0, 0);
+    return { timestamp: timestamp.toISOString(), value };
+  });
+
+  const accumulatedValues = getAccumulatedValues(trendType, period);
+  const accumulated = accumulatedValues.map((value, index) => {
+    const timestamp = new Date(anchorDate);
+
+    if (period === "year") {
+      timestamp.setDate(1);
+      timestamp.setMonth(
+        anchorDate.getMonth() - (accumulatedValues.length - 1 - index),
+      );
+    } else {
+      timestamp.setDate(
+        anchorDate.getDate() - (accumulatedValues.length - 1 - index),
+      );
+    }
+
+    return { timestamp: timestamp.toISOString(), value };
+  });
+
+  return { instant, accumulated };
+};
+
+// Cùng contract với API thật: Promise<{ data: { instant, accumulated } }>.
+export const mockFetchData = async (params) => ({
+  data: createMockTrendData(params),
+});
