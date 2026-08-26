@@ -325,15 +325,7 @@ export default function DashboardTrendCard() {
     accumulatedChartRef.current?.resetZoom();
   }, [trendType, selectedPeriod]);
 
-  // ====================================================
-  // CO2 CURRENT DATA
-  // ====================================================
-
   const currentCO2Data = isCO2 ? currentTrend[co2Period] : null;
-
-  // ====================================================
-  // ACCUMULATED DATA
-  // ====================================================
 
   const currentInstantLabels = mockData.instant.map(({ timestamp }) =>
     formatTimeLabel(timestamp),
@@ -392,10 +384,6 @@ export default function DashboardTrendCard() {
       ? "rgb(239, 68, 68)"
       : currentTrend.solidColor;
 
-  // ====================================================
-  // INSTANT LINE DATA
-  // ====================================================
-
   const instantTrendData = !isCO2
     ? {
         labels: currentInstantLabels,
@@ -440,10 +428,6 @@ export default function DashboardTrendCard() {
         ],
       }
     : null;
-
-  // ====================================================
-  // INSTANT OPTIONS
-  // ====================================================
 
   const instantTrendOptions = !isCO2
     ? {
@@ -595,10 +579,6 @@ export default function DashboardTrendCard() {
       }
     : null;
 
-  // ====================================================
-  // ACCUMULATED BAR DATA
-  // ====================================================
-
   const accumulatedTrendData = {
     labels: currentAccumulatedLabels,
 
@@ -649,10 +629,6 @@ export default function DashboardTrendCard() {
       },
     ],
   };
-
-  // ====================================================
-  // ACCUMULATED OPTIONS
-  // ====================================================
 
   const accumulatedTrendOptions = {
     responsive: true,
@@ -813,8 +789,6 @@ export default function DashboardTrendCard() {
           },
 
           callback: function (value, index) {
-            // 30 ngày:
-            // chỉ hiện 01, 03, 05...
             if (isCO2 && co2Period === "month") {
               return index % 2 === 0 ? this.getLabelForValue(value) : "";
             }
@@ -825,9 +799,6 @@ export default function DashboardTrendCard() {
 
         title: {
           display: true,
-
-          // CO2 tháng -> trục X là Ngày
-          // CO2 năm   -> trục X là Tháng
           text: lang.formatMessage({
             id:
               selectedPeriod === "year"
@@ -890,21 +861,9 @@ export default function DashboardTrendCard() {
     },
   };
 
-  // ======================================================
-  // RENDER
-  // ======================================================
-
   return (
     <div className="DAT_DashBoard_TrendCard">
-      {/* ============================================== */}
-      {/* CHART AREA */}
-      {/* ============================================== */}
-
       <div className="DAT_DashBoard_TrendCard_Charts">
-        {/* ============================================ */}
-        {/* INSTANT CHART */}
-        {/* ============================================ */}
-
         {!isCO2 && (
           <>
             <div className="DAT_DashBoard_TrendCard_Charts_Instant">
@@ -950,10 +909,6 @@ export default function DashboardTrendCard() {
             <div className="DAT_DashBoard_TrendCard_Charts_Line" />
           </>
         )}
-
-        {/* ============================================ */}
-        {/* ACCUMULATED CHART */}
-        {/* ============================================ */}
 
         <div
           className={`DAT_DashBoard_TrendCard_Charts_Accumulated ${
@@ -1071,15 +1026,7 @@ export default function DashboardTrendCard() {
         </div>
       </div>
 
-      {/* ============================================== */}
-      {/* DIVIDER */}
-      {/* ============================================== */}
-
       <div className="DAT_DashBoard_TrendCard_Line" />
-
-      {/* ============================================== */}
-      {/* SWITCH */}
-      {/* ============================================== */}
 
       <div className="DAT_DashBoard_TrendCard_Switch">
         {/* ELECTRIC */}
