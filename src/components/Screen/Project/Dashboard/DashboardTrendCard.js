@@ -120,6 +120,13 @@ const getToday = () => {
   return formatDateInput(date);
 };
 
+const getCurrentMonth = () => getToday().slice(0, 7);
+
+const getMonthEndDate = (monthValue) => {
+  const [year, month] = monthValue.split("-").map(Number);
+  return formatDateInput(new Date(year, month, 0));
+};
+
 const formatTimeLabel = (timestamp) =>
   new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
@@ -287,6 +294,8 @@ export default function DashboardTrendCard() {
 
   const [instantDate, setInstantDate] = useState(getToday());
 
+  const [accumulatedMonth, setAccumulatedMonth] = useState(getCurrentMonth());
+
   const currentTrend = trendConfig[trendType];
 
   const isCO2 = trendType === "co2";
@@ -297,6 +306,7 @@ export default function DashboardTrendCard() {
     createMockTrendData({
       trendType: "electric",
       date: getToday(),
+      accumulatedDate: getMonthEndDate(getCurrentMonth()),
       period: "week",
     }),
   );
@@ -307,6 +317,9 @@ export default function DashboardTrendCard() {
     mockFetchData({
       trendType,
       date: instantDate,
+      accumulatedDate: isCO2
+        ? getMonthEndDate(accumulatedMonth)
+        : instantDate,
       period: selectedPeriod,
     }).then((response) => {
       if (isCurrentRequest) setMockData(response.data);
@@ -315,7 +328,7 @@ export default function DashboardTrendCard() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [trendType, instantDate, selectedPeriod]);
+  }, [trendType, instantDate, accumulatedMonth, selectedPeriod]);
 
   useEffect(() => {
     instantChartRef.current?.resetZoom();
@@ -323,7 +336,7 @@ export default function DashboardTrendCard() {
 
   useEffect(() => {
     accumulatedChartRef.current?.resetZoom();
-  }, [trendType, selectedPeriod]);
+  }, [trendType, accumulatedMonth, selectedPeriod]);
 
   // ====================================================
   // CO2 CURRENT DATA
@@ -347,18 +360,29 @@ export default function DashboardTrendCard() {
 
   const accumulatedValues = mockData.accumulated.map(({ value }) => value);
 
-  const lastIndex = accumulatedValues.length - 1;
+  const actualAccumulatedData = mockData.accumulated.filter(
+    ({ isFuture }) => !isFuture,
+  );
 
-  const previousValue = accumulatedValues[lastIndex - 1];
+  const latestDataIndex = mockData.accumulated.reduce(
+    (latestIndex, item, index) => (item.isFuture ? latestIndex : index),
+    -1,
+  );
 
-  const currentValue = accumulatedValues[lastIndex];
+  const previousValue =
+    actualAccumulatedData[actualAccumulatedData.length - 2]?.value;
 
-  const isIncrease = currentValue > previousValue;
+  const currentValue =
+    actualAccumulatedData[actualAccumulatedData.length - 1]?.value;
 
-  const isDecrease = currentValue < previousValue;
+  const isIncrease =
+    previousValue !== undefined && currentValue > previousValue;
+
+  const isDecrease =
+    previousValue !== undefined && currentValue < previousValue;
 
   const changePercent =
-    previousValue !== 0
+    previousValue !== undefined && previousValue !== 0
       ? ((currentValue - previousValue) / previousValue) * 100
       : 0;
 
@@ -613,7 +637,7 @@ export default function DashboardTrendCard() {
           }
 
           // Các loại khác giữ logic cũ
-          if (index !== lastIndex) {
+          if (index !== latestDataIndex) {
             return currentTrend.color;
           }
 
@@ -684,8 +708,16 @@ export default function DashboardTrendCard() {
 
         display: (context) => {
           const values = context.dataset.data;
-          const maximumIndex = values.indexOf(Math.max(...values));
-          const minimumIndex = values.indexOf(Math.min(...values));
+          const actualIndexes = mockData.accumulated
+            .map((item, index) => (item.isFuture ? -1 : index))
+            .filter((index) => index >= 0);
+          const actualValues = actualIndexes.map((index) => values[index]);
+          const maximumIndex = actualIndexes[
+            actualValues.indexOf(Math.max(...actualValues))
+          ];
+          const minimumIndex = actualIndexes[
+            actualValues.indexOf(Math.min(...actualValues))
+          ];
 
           return (
             context.dataIndex === maximumIndex ||
@@ -700,7 +732,7 @@ export default function DashboardTrendCard() {
             return currentTrend.solidColor;
           }
 
-          if (context.dataIndex !== lastIndex) {
+          if (context.dataIndex !== latestDataIndex) {
             return currentTrend.solidColor;
           }
 
@@ -993,6 +1025,21 @@ export default function DashboardTrendCard() {
                 </span>
               )}
 
+              {isCO2 && (
+                <input
+                  className="DAT_DashBoard_TrendCard_Charts_Accumulated_Header_MonthPicker"
+                  type="month"
+                  value={accumulatedMonth}
+                  max={getCurrentMonth()}
+                  onChange={(event) => {
+                    if (event.target.value) {
+                      setAccumulatedMonth(event.target.value);
+                    }
+                  }}
+                  aria-label="Chọn tháng và năm"
+                />
+              )}
+
               {/* PERIOD */}
 
               <div
@@ -1012,47 +1059,42 @@ export default function DashboardTrendCard() {
                   </button>
                 )}
 
-                <>
-                  {/* MONTH */}
-
+                {/* CO2 MONTH */}
+                {isCO2 && (
                   <button
                     type="button"
                     className={`DAT_DashBoard_TrendCard_Charts_Accumulated_Header_Period_Item ${
-                      (isCO2 ? co2Period : accumulatedPeriod) === "month"
+                      co2Period === "month"
                         ? "DAT_DashBoard_TrendCard_Charts_Accumulated_Header_Period_Item_Active"
                         : ""
                     }`}
-                    onClick={() =>
-                      isCO2
-                        ? setCo2Period("month")
-                        : setAccumulatedPeriod("month")
-                    }
+                    onClick={() => setCo2Period("month")}
                   >
                     {lang.formatMessage({
                       id: "dashboard_trend_month",
                     })}
                   </button>
+                )}
 
-                  {/* YEAR */}
+                {/* YEAR */}
 
-                  <button
-                    type="button"
-                    className={`DAT_DashBoard_TrendCard_Charts_Accumulated_Header_Period_Item ${
-                      (isCO2 ? co2Period : accumulatedPeriod) === "year"
-                        ? "DAT_DashBoard_TrendCard_Charts_Accumulated_Header_Period_Item_Active"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      isCO2
-                        ? setCo2Period("year")
-                        : setAccumulatedPeriod("year")
-                    }
-                  >
-                    {lang.formatMessage({
-                      id: "dashboard_trend_year",
-                    })}
-                  </button>
-                </>
+                <button
+                  type="button"
+                  className={`DAT_DashBoard_TrendCard_Charts_Accumulated_Header_Period_Item ${
+                    (isCO2 ? co2Period : accumulatedPeriod) === "year"
+                      ? "DAT_DashBoard_TrendCard_Charts_Accumulated_Header_Period_Item_Active"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    isCO2
+                      ? setCo2Period("year")
+                      : setAccumulatedPeriod("year")
+                  }
+                >
+                  {lang.formatMessage({
+                    id: "dashboard_trend_year",
+                  })}
+                </button>
               </div>
             </div>
           </div>

@@ -858,18 +858,59 @@ const createPeriodValues = (source, count, factor = 1) =>
     ),
   );
 
-const getAccumulatedValues = (trendType, period) => {
+const getAccumulatedValues = (trendType, period, count) => {
   const source = mockValues[trendType];
 
-  if (trendType === "co2") return source[period];
+  if (trendType === "co2") {
+    const periodSource = source[period];
+    return Array.from(
+      { length: count },
+      (_, index) => periodSource[index % periodSource.length],
+    );
+  }
   if (period === "week") return source.accumulated;
-  if (period === "month") return createPeriodValues(source.accumulated, 30);
   return createPeriodValues(source.accumulated, 12, 28);
 };
 
-export const createMockTrendData = ({ trendType, date, period }) => {
+const createAccumulatedDates = (anchorDate, period) => {
+  if (period === "week") {
+    const monday = new Date(anchorDate);
+    const daysSinceMonday = (monday.getDay() + 6) % 7;
+    monday.setDate(monday.getDate() - daysSinceMonday);
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + index);
+      return date;
+    });
+  }
+
+  if (period === "month") {
+    const year = anchorDate.getFullYear();
+    const month = anchorDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    return Array.from(
+      { length: daysInMonth },
+      (_, index) => new Date(year, month, index + 1),
+    );
+  }
+
+  return Array.from(
+    { length: 12 },
+    (_, index) => new Date(anchorDate.getFullYear(), index, 1),
+  );
+};
+
+export const createMockTrendData = ({
+  trendType,
+  date,
+  accumulatedDate = date,
+  period,
+}) => {
   const source = mockValues[trendType];
   const anchorDate = new Date(`${date}T00:00:00`);
+  const accumulatedAnchorDate = new Date(`${accumulatedDate}T00:00:00`);
 
   const instant = (source.instant || []).map((value, index) => {
     const timestamp = new Date(anchorDate);
@@ -877,22 +918,25 @@ export const createMockTrendData = ({ trendType, date, period }) => {
     return { timestamp: timestamp.toISOString(), value };
   });
 
-  const accumulatedValues = getAccumulatedValues(trendType, period);
-  const accumulated = accumulatedValues.map((value, index) => {
-    const timestamp = new Date(anchorDate);
+  const accumulatedDates = createAccumulatedDates(
+    accumulatedAnchorDate,
+    period,
+  );
+  const accumulatedValues = getAccumulatedValues(
+    trendType,
+    period,
+    accumulatedDates.length,
+  );
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
 
-    if (period === "year") {
-      timestamp.setDate(1);
-      timestamp.setMonth(
-        anchorDate.getMonth() - (accumulatedValues.length - 1 - index),
-      );
-    } else {
-      timestamp.setDate(
-        anchorDate.getDate() - (accumulatedValues.length - 1 - index),
-      );
-    }
-
-    return { timestamp: timestamp.toISOString(), value };
+  const accumulated = accumulatedDates.map((timestamp, index) => {
+    const isFuture = timestamp > today;
+    return {
+      timestamp: timestamp.toISOString(),
+      value: isFuture ? 0 : accumulatedValues[index],
+      isFuture,
+    };
   });
 
   return { instant, accumulated };
