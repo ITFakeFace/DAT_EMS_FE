@@ -1,0 +1,337 @@
+.DAT_ElectricDetail {
+  min-height: 100vh;
+  background: rgba(6, 13, 36, 1);
+  color: rgba(255, 255, 255, 1);
+  padding: 16px 20px 10px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+
+  /* Header */
+  &_Header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    &_BackBtn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(8, 26, 60, 0.8);
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      color: rgba(255, 255, 255, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.2s ease;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      &:hover {
+        background: rgba(0, 130, 202, 1);
+        border-color: rgba(34, 211, 238, 1);
+        box-shadow: 0px 0px 12px rgba(34, 211, 238, 0.4);
+      }
+    }
+
+    &_Title {
+      margin: 0px;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 1);
+      letter-spacing: 0.3px;
+      line-height: 1.1;
+    }
+  }
+
+  /* Grid 4 Cột */
+  &_Grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1.15fr 1.35fr 1.35fr;
+    gap: 14px;
+    margin-bottom: 14px;
+
+    /* Base Card (Card 1) */
+    &_Card {
+      background: rgba(8, 17, 46, 1);
+      border: 1px solid rgba(19, 43, 92, 1);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+
+      &_TitleCyan {
+        margin: 0px 0px 10px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        color: rgba(0, 210, 255, 1);
+      }
+
+      &_Divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.07);
+        margin: 8px 0px;
+      }
+
+      &_EnergySection {
+        padding: 4px 0px;
+
+        &_Label {
+          display: block;
+          color: rgba(125, 143, 166, 1);
+          font-size: 11px;
+          margin-bottom: 4px;
+        }
+
+        &_ValueRow {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+
+          &_BigNum {
+            font-size: 24px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 1);
+            letter-spacing: 0.5px;
+          }
+
+          &_MidNum {
+            font-size: 19px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 1);
+          }
+
+          &_Unit {
+            font-size: 11px;
+            color: rgba(125, 143, 166, 1);
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    /* Card 2: Cột 3 khối công suất */
+    &_PowersCol {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+
+      &_PowerCard {
+        background: rgba(8, 17, 46, 1);
+        border: 1px solid rgba(19, 43, 92, 1);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex: 1;
+        padding: 10px 16px;
+
+        &_TitleCyan {
+          margin: 0px 0px 4px;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.4px;
+          color: rgba(0, 210, 255, 1);
+        }
+
+        &_ValueRow {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+
+          &_BigNum {
+            font-size: 24px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 1);
+            letter-spacing: 0.5px;
+          }
+
+          &_Unit {
+            font-size: 11px;
+            color: rgba(125, 143, 166, 1);
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    /* Card 3 & 4: Phase Cards */
+    &_PhaseCard {
+      background: rgba(8, 17, 46, 1);
+      border: 1px solid rgba(19, 43, 92, 1);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      h3 {
+        margin: 0px 0px 10px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        color: rgba(255, 255, 255, 1);
+      }
+
+      &_Header {
+        display: grid;
+        grid-template-columns: 42px 1fr 1fr;
+        gap: 16px;
+        text-align: center;
+        margin-bottom: 12px;
+
+        span {
+          font-size: 11px;
+          color: rgba(0, 210, 255, 1);
+          font-weight: 600;
+
+          &:first-child {
+            grid-column: 2;
+          }
+        }
+      }
+
+      &_List {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+
+        &_Item {
+          display: grid;
+          grid-template-columns: 42px 1fr 1fr;
+          gap: 16px;
+          align-items: flex-start;
+
+          &_BadgeCol {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+
+            small {
+              font-size: 9.5px;
+              color: rgba(125, 143, 166, 1);
+              white-space: nowrap;
+            }
+
+            &_Badge {
+              width: 24px;
+              height: 24px;
+              border-radius: 6px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: rgba(255, 255, 255, 1);
+              font-size: 12px;
+              font-weight: 700;
+
+              &_purple { background: rgba(157, 78, 221, 1); }
+              &_green  { background: rgba(112, 180, 0, 1); }
+              &_cyan   { background: rgba(0, 168, 204, 1); }
+            }
+          }
+
+          &_MetricCol {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 1px;
+
+            &_Val {
+              display: flex;
+              align-items: baseline;
+              justify-content: center;
+              gap: 4px;
+              margin-bottom: 6px;
+              line-height: 1;
+
+              strong {
+                font-size: 16px;
+                font-weight: 700;
+                color: rgba(255, 255, 255, 1);
+              }
+
+              span {
+                font-size: 10px;
+                color: rgba(125, 143, 166, 1);
+              }
+            }
+
+            &_Bar {
+              width: 100%;
+              height: 4px;
+              border-radius: 2px;
+
+              &_purple { background: rgba(157, 78, 221, 1); }
+              &_green  { background: rgba(112, 180, 0, 1); }
+              &_cyan   { background: rgba(0, 168, 204, 1); }
+              &_orange { background: rgba(245, 158, 11, 1); }
+            }
+          }
+        }
+      }
+
+      &_Legend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 14px;
+        padding-top: 8px;
+
+        .dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+
+          &-purple { background: rgba(157, 78, 221, 1); }
+          &-orange { background: rgba(245, 158, 11, 1); }
+        }
+
+        label {
+          font-size: 10px;
+          color: rgba(140, 158, 181, 1);
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+
+  /* Chart Card */
+  &_ChartCard {
+    background: rgba(8, 17, 46, 1);
+    border: 1px solid rgba(19, 43, 92, 1);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 18px 8px;
+
+    &_Title {
+      text-align: center;
+      margin: 0px 0px 2px;
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 1);
+    }
+
+    &_Sub {
+      text-align: center;
+      margin: 0px 0px 8px;
+      color: rgba(125, 143, 166, 1);
+      font-size: 11px;
+    }
+
+    &_Wrap {
+      height: 220px;
+      width: 100%;
+    }
+  }
+}
