@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useMemo, useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Line } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 import {
+  BarElement,
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -11,81 +12,654 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { LuChevronLeft } from "react-icons/lu";
+import ChartDataLabels from "chartjs-plugin-datalabels";
+import zoomPlugin from "chartjs-plugin-zoom";
+import { LuChevronLeft, LuCalendar } from "react-icons/lu";
+import { FaDownload } from "react-icons/fa6";
 import { useIntl } from "react-intl";
-import { electricDetailData } from "../../../../Data/Data";
+import {
+  electricDetailData,
+  mockEnergyReport,
+  mockEnergyReportHourly,
+  MOCK_LATEST_DATE,
+  createMockTrendData,
+  mockFetchData,
+} from "../../../../Data/Data";
 import "./ElectricDetail.scss";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Filler,
+  Tooltip,
+  Legend,
+  zoomPlugin
+);
+
+// ======================================================
+// TREND CONFIG - CHỈ GIỮ ELECTRIC
+// ======================================================
+
+const trendConfig = {
+  electric: {
+    instantUnit: "kW",
+    accumulatedUnit: "kWh",
+    color: "rgba(59, 130, 246, 0.8)",
+    solidColor: "rgb(59, 130, 246)",
+    instantStepSize: 20,
+    instantMax: 80,
+    accumulatedStepSize: 5000,
+  },
+};
+
+// ======================================================
+// LABELS
+// ======================================================
+
+const formatDateInput = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getToday = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return formatDateInput(date);
+};
+
+const getCurrentMonth = () => getToday().slice(0, 7);
+
+const getMonthEndDate = (monthValue) => {
+  const [year, month] = monthValue.split("-").map(Number);
+  return formatDateInput(new Date(year, month, 0));
+};
+
+const formatTimeLabel = (timestamp) =>
+  new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(timestamp));
+
+const formatAccumulatedLabel = (timestamp, period) =>
+  new Intl.DateTimeFormat(
+    "vi-VN",
+    period === "year"
+      ? { month: "2-digit" }
+      : { day: "2-digit", month: "2-digit" }
+  ).format(new Date(timestamp));
+
+const formatAccumulatedValue = (value) => {
+  if (value < 1000) {
+    return value;
+  }
+  const result = value / 1000;
+  return `${Number.isInteger(result) ? result : result.toFixed(1)}k`;
+};
+
+// ======================================================
+// BAR HOVER BACKGROUND
+// ======================================================
+
+const barHoverBackground = {
+  id: "barHoverBackground",
+  beforeDatasetsDraw(chart) {
+    const activeElements = chart.getActiveElements();
+    if (!activeElements.length) return;
+    const { ctx, chartArea, scales } = chart;
+    const index = activeElements[0].index;
+    const xScale = scales.x;
+    const center = xScale.getPixelForTick(index);
+    const previous = index > 0 ? xScale.getPixelForTick(index - 1) : null;
+    const next =
+      index < xScale.ticks.length - 1
+        ? xScale.getPixelForTick(index + 1)
+        : null;
+    const left =
+      previous !== null
+        ? (previous + center) / 2
+        : center - (next - center) / 2;
+    const right =
+      next !== null ? (center + next) / 2 : center + (center - previous) / 2;
+    ctx.save();
+    ctx.fillStyle = "rgba(226, 232, 240, 0.18)";
+    ctx.fillRect(
+      left,
+      chartArea.top,
+      right - left,
+      chartArea.bottom - chartArea.top
+    );
+    ctx.restore();
+  },
+};
+
+// ======================================================
+// INSTANT EXTREMA LABELS
+// ======================================================
+
+const instantExtremaLabels = {
+  id: "instantExtremaLabels",
+  afterDatasetsDraw(chart, _args, options) {
+    const values = chart.data.datasets[0]?.data;
+    const meta = chart.getDatasetMeta(0);
+    if (!values?.length || !meta?.data?.length) return;
+    const maximum = Math.max(...values);
+    const minimum = Math.min(...values);
+    const indexes = [
+      ...new Set([values.indexOf(maximum), values.indexOf(minimum)]),
+    ];
+    const { ctx, chartArea } = chart;
+    indexes.forEach((index) => {
+      const point = meta.data[index];
+      if (!point) return;
+      const text = String(values[index]);
+      const height = 24;
+      const pointer = 8;
+      ctx.save();
+      ctx.font = "700 11px monospace";
+      const width = Math.max(40, ctx.measureText(text).width + 18);
+      const left = Math.min(
+        Math.max(point.x - width / 2, chartArea.left),
+        chartArea.right - width
+      );
+      const top = Math.max(2, point.y - height - pointer - 4);
+      const tipX = Math.min(Math.max(point.x, left + 8), left + width - 8);
+      ctx.beginPath();
+      ctx.roundRect(left, top, width, height, 12);
+      ctx.globalAlpha = 0.82;
+      ctx.fillStyle = options.color || "rgb(59, 130, 246)";
+      ctx.shadowColor = options.color || "rgb(59, 130, 246)";
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.moveTo(tipX - pointer, top + height - 2);
+      ctx.quadraticCurveTo(tipX, top + height + 3, point.x, point.y - 1);
+      ctx.quadraticCurveTo(
+        tipX,
+        top + height + 3,
+        tipX + pointer,
+        top + height - 2
+      );
+      ctx.closePath();
+      ctx.fillStyle = options.color || "rgb(59, 130, 246)";
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+      ctx.shadowBlur = 2;
+      ctx.fillStyle = "rgb(255, 255, 255)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, left + width / 2, top + height / 2);
+      ctx.restore();
+    });
+  },
+};
 
 export default function ElectricDetail() {
   const lang = useIntl();
   const navigate = useNavigate();
   const { nodeId } = useParams();
-  const detail = electricDetailData[Number(nodeId)] || electricDetailData[nodeId] || electricDetailData[1];
 
-  const chartData = {
-    labels: detail.chart.map((item) => item.time),
+  const instantChartRef = useRef(null);
+  const accumulatedChartRef = useRef(null);
+
+  const detail =
+    electricDetailData[Number(nodeId)] ||
+    electricDetailData[nodeId] ||
+    electricDetailData[1];
+
+  // ================================
+  // STATE - CHỈ GIỮ ELECTRIC
+  // ================================
+
+  const [accumulatedPeriod, setAccumulatedPeriod] = useState("week");
+  const [instantDate, setInstantDate] = useState(getToday());
+  const [accumulatedMonth, setAccumulatedMonth] = useState(getCurrentMonth());
+
+  const currentTrend = trendConfig.electric;
+
+  const [mockData, setMockData] = useState(() =>
+    createMockTrendData({
+      trendType: "electric",
+      date: getToday(),
+      accumulatedDate: getMonthEndDate(getCurrentMonth()),
+      period: "week",
+    })
+  );
+
+  // ================================
+  // EFFECTS
+  // ================================
+
+  useEffect(() => {
+    let isCurrentRequest = true;
+    mockFetchData({
+      trendType: "electric",
+      date: instantDate,
+      accumulatedDate: instantDate,
+      period: accumulatedPeriod,
+    }).then((response) => {
+      if (isCurrentRequest) setMockData(response.data);
+    });
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [instantDate, accumulatedPeriod]);
+
+  useEffect(() => {
+    instantChartRef.current?.resetZoom();
+  }, [instantDate]);
+
+  useEffect(() => {
+    accumulatedChartRef.current?.resetZoom();
+  }, [accumulatedMonth, accumulatedPeriod]);
+
+  // ================================
+  // DATA PROCESSING
+  // ================================
+
+  const currentInstantLabels = mockData.instant.map(({ timestamp }) =>
+    formatTimeLabel(timestamp)
+  );
+
+  const currentInstantValues = mockData.instant.map(({ value }) => value);
+
+  const currentAccumulatedLabels = mockData.accumulated.map(({ timestamp }) =>
+    formatAccumulatedLabel(timestamp, accumulatedPeriod)
+  );
+
+  const accumulatedValues = mockData.accumulated.map(({ value }) => value);
+
+  const actualAccumulatedData = mockData.accumulated.filter(
+    ({ isFuture }) => !isFuture
+  );
+
+  const latestDataIndex = mockData.accumulated.reduce(
+    (latestIndex, item, index) => (item.isFuture ? latestIndex : index),
+    -1
+  );
+
+  const previousValue =
+    actualAccumulatedData[actualAccumulatedData.length - 2]?.value;
+
+  const currentValue =
+    actualAccumulatedData[actualAccumulatedData.length - 1]?.value;
+
+  const isIncrease =
+    previousValue !== undefined && currentValue > previousValue;
+
+  const isDecrease =
+    previousValue !== undefined && currentValue < previousValue;
+
+  const changePercent =
+    previousValue !== undefined && previousValue !== 0
+      ? ((currentValue - previousValue) / previousValue) * 100
+      : 0;
+
+  const percent = Math.abs(changePercent).toFixed(2);
+
+  const comparePeriodSuffix = accumulatedPeriod === "year" ? "_month" : "";
+
+  const compareText = isIncrease
+    ? lang.formatMessage(
+        {
+          id: `dashboard_trend_increase${comparePeriodSuffix}`,
+        },
+        {
+          percent,
+        }
+      )
+    : isDecrease
+    ? lang.formatMessage(
+        {
+          id: `dashboard_trend_decrease${comparePeriodSuffix}`,
+        },
+        {
+          percent,
+        }
+      )
+    : null;
+
+  const compareColor = isIncrease
+    ? "rgb(16, 185, 129)"
+    : isDecrease
+    ? "rgb(239, 68, 68)"
+    : currentTrend.solidColor;
+
+  // ================================
+  // CHART DATA & OPTIONS
+  // ================================
+
+  const instantTrendData = {
+    labels: currentInstantLabels,
     datasets: [
       {
-        label: "kW",
-        data: detail.chart.map((item) => item.kw),
-        borderColor: "rgba(180, 85, 255, 1)",
-        borderWidth: 2.5,
-        backgroundColor: "rgba(0, 0, 0, 0)",
+        data: currentInstantValues,
+        borderColor: currentTrend.solidColor,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
         tension: 0.4,
-        pointBackgroundColor: "rgba(180, 85, 255, 1)",
-        pointBorderColor: "rgba(255, 255, 255, 1)",
-        pointBorderWidth: 1,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        fill: false,
+        fill: true,
+        backgroundColor: (context) => {
+          const { ctx, chartArea } = context.chart;
+          if (!chartArea) {
+            return currentTrend.color;
+          }
+          const gradient = ctx.createLinearGradient(
+            0,
+            chartArea.top,
+            0,
+            chartArea.bottom
+          );
+          gradient.addColorStop(0, currentTrend.color);
+          gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+          return gradient;
+        },
       },
     ],
   };
 
-  const chartOptions = {
+  const instantTrendOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: false,
+      },
       tooltip: {
-        backgroundColor: "rgba(10, 18, 42, 0.9)",
-        titleColor: "rgba(147, 197, 253, 1)",
-        bodyColor: "rgba(255, 255, 255, 1)",
-        borderColor: "rgba(0, 130, 202, 0.5)",
+        backgroundColor: "rgb(15, 26, 48)",
+        borderColor: "rgb(28, 45, 77)",
         borderWidth: 1,
+        titleColor: "rgb(148, 163, 184)",
+        bodyColor: "rgb(241, 245, 249)",
+        displayColors: false,
+        callbacks: {
+          label: (context) => `${context.raw} ${currentTrend.instantUnit}`,
+        },
+      },
+      instantExtremaLabels: {
+        color: currentTrend.solidColor,
+      },
+      zoom: {
+        limits: {
+          x: { minRange: 3 },
+        },
+        pan: {
+          enabled: true,
+          mode: "x",
+        },
+        zoom: {
+          wheel: {
+            enabled: true,
+            speed: 0.08,
+          },
+          pinch: {
+            enabled: true,
+          },
+          mode: "x",
+        },
+      },
+    },
+    layout: {
+      padding: {
+        top: 38,
       },
     },
     scales: {
       x: {
-        title: {
-          display: true,
-          text: lang.formatMessage({ id: "project_monitor_time" }),
-          color: "rgba(125, 143, 166, 1)",
-          font: { size: 11 },
-          padding: { top: 8 },
-        },
-        ticks: { color: "rgba(125, 143, 166, 1)", font: { size: 10 } },
-        grid: { display: false },
-      },
-      y: {
-        title: {
-          display: true,
-          text: "kW",
-          color: "rgba(125, 143, 166, 1)",
-          font: { size: 11 },
-        },
-        min: 0,
-        max: 80,
-        ticks: {
-          stepSize: 20,
-          color: "rgba(125, 143, 166, 1)",
-          font: { size: 10 },
+        border: {
+          display: false,
         },
         grid: {
-          color: "rgba(255, 255, 255, 0.05)",
-          drawBorder: false,
+          display: false,
+        },
+        ticks: {
+          color: "rgb(100, 116, 139)",
+          font: {
+            size: 9,
+          },
+          callback: function (value, index) {
+            return index % 2 === 0 ? this.getLabelForValue(value) : "";
+          },
+        },
+        title: {
+          display: true,
+          text: lang.formatMessage({
+            id: "dashboard_trend_time",
+          }),
+          color: "rgb(100, 116, 139)",
+          font: {
+            size: 9,
+          },
+          padding: {
+            top: 12,
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        min: 0,
+        max: currentTrend.instantMax,
+        border: {
+          display: false,
+        },
+        ticks: {
+          stepSize: currentTrend.instantStepSize,
+          color: "rgb(100, 116, 139)",
+          font: {
+            size: 9,
+          },
+        },
+        grid: {
+          color: "rgba(148, 163, 184, 0.12)",
+          drawTicks: false,
+        },
+        title: {
+          display: true,
+          text: currentTrend.instantUnit,
+          color: "rgb(203, 213, 225)",
+          font: {
+            size: 9,
+            weight: "bold",
+          },
+        },
+      },
+    },
+  };
+
+  const accumulatedTrendData = {
+    labels: currentAccumulatedLabels,
+    datasets: [
+      {
+        data: accumulatedValues,
+        backgroundColor: accumulatedValues.map((_, index) => {
+          if (index !== latestDataIndex) {
+            return currentTrend.color;
+          }
+          if (isIncrease) {
+            return "rgba(16, 185, 129, 0.9)";
+          }
+          if (isDecrease) {
+            return "rgba(239, 68, 68, 0.9)";
+          }
+          return currentTrend.color;
+        }),
+        borderWidth: 0,
+        borderRadius: 4,
+        borderSkipped: false,
+        maxBarThickness: accumulatedPeriod === "month" ? 22 : 40,
+        categoryPercentage: 0.7,
+        barPercentage: 0.65,
+      },
+    ],
+  };
+
+  const accumulatedTrendOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
+    layout: {
+      padding: {
+        top: 14,
+      },
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      datalabels: {
+        anchor: "end",
+        align: "end",
+        offset: 2,
+        display: (context) => {
+          const values = context.dataset.data;
+          const actualIndexes = mockData.accumulated
+            .map((item, index) => (item.isFuture ? -1 : index))
+            .filter((index) => index >= 0);
+          const actualValues = actualIndexes.map((index) => values[index]);
+          const maximumIndex = actualIndexes[
+            actualValues.indexOf(Math.max(...actualValues))
+          ];
+          const minimumIndex = actualIndexes[
+            actualValues.indexOf(Math.min(...actualValues))
+          ];
+          return (
+            context.dataIndex === maximumIndex ||
+            context.dataIndex === minimumIndex
+          );
+        },
+        formatter: (value) => formatAccumulatedValue(value),
+        color: (context) => {
+          if (context.dataIndex !== latestDataIndex) {
+            return currentTrend.solidColor;
+          }
+          if (isIncrease) {
+            return "rgb(16, 185, 129)";
+          }
+          if (isDecrease) {
+            return "rgb(239, 68, 68)";
+          }
+          return currentTrend.solidColor;
+        },
+        font: {
+          size: 9,
+          weight: "700",
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgb(15, 26, 48)",
+        borderColor: "rgb(28, 45, 77)",
+        borderWidth: 1,
+        cornerRadius: 8,
+        padding: 10,
+        titleColor: "rgb(203, 213, 225)",
+        bodyColor: "rgb(241, 245, 249)",
+        displayColors: false,
+        titleFont: {
+          size: 11,
+          weight: "600",
+        },
+        bodyFont: {
+          size: 12,
+          weight: "700",
+        },
+        callbacks: {
+          label: (context) =>
+            `${formatAccumulatedValue(
+              context.raw
+            )} ${currentTrend.accumulatedUnit}`,
+        },
+      },
+      zoom: {
+        limits: {
+          x: { minRange: 3 },
+        },
+        pan: {
+          enabled: true,
+          mode: "x",
+        },
+        zoom: {
+          wheel: {
+            enabled: true,
+            speed: 0.08,
+          },
+          pinch: {
+            enabled: true,
+          },
+          mode: "x",
+        },
+      },
+    },
+    scales: {
+      x: {
+        border: {
+          display: false,
+        },
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: "rgb(100, 116, 139)",
+          font: {
+            size: 9,
+          },
+        },
+        title: {
+          display: true,
+          text: lang.formatMessage({
+            id:
+              accumulatedPeriod === "year"
+                ? "dashboard_trend_month"
+                : "dashboard_trend_day",
+          }),
+          color: "rgb(100, 116, 139)",
+          font: {
+            size: 9,
+          },
+          padding: {
+            top: 10,
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        border: {
+          display: false,
+        },
+        ticks: {
+          stepSize: currentTrend.accumulatedStepSize,
+          color: "rgb(100, 116, 139)",
+          font: {
+            size: 9,
+          },
+          callback: (value) => formatAccumulatedValue(value),
+        },
+        grid: {
+          color: "rgba(148, 163, 184, 0.12)",
+          drawTicks: false,
+        },
+        title: {
+          display: true,
+          text: currentTrend.accumulatedUnit,
+          color: "rgb(203, 213, 225)",
+          font: {
+            size: 9,
+            weight: "bold",
+          },
         },
       },
     },
@@ -102,8 +676,17 @@ export default function ElectricDetail() {
         >
           <LuChevronLeft />
         </button>
+
         <h2 className="DAT_ElectricDetail_Header_Title">
-          {lang.formatMessage({ id: "electric_detail_title" }, { title: detail.title.replace(/^Giám sát chi tiết Điện năng\s*/i, "") })}
+          {lang.formatMessage(
+            { id: "electric_detail_title" },
+            {
+              title: detail.title.replace(
+                /^Giám sát chi tiết Điện năng\s*/i,
+                ""
+              ),
+            }
+          )}
         </h2>
       </div>
 
@@ -111,33 +694,67 @@ export default function ElectricDetail() {
       <div className="DAT_ElectricDetail_Grid">
         {/* Card 1: Điện năng tiêu thụ */}
         <section className="DAT_ElectricDetail_Grid_Card">
-          <h3 className="DAT_ElectricDetail_Grid_Card_TitleCyan">{lang.formatMessage({ id: "electric_detail_energy_title" })}</h3>
+          <h3 className="DAT_ElectricDetail_Grid_Card_TitleCyan">
+            {lang.formatMessage({
+              id: "electric_detail_energy_title",
+            })}
+          </h3>
 
           <div className="DAT_ElectricDetail_Grid_Card_EnergySection">
-            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">{lang.formatMessage({ id: "electric_detail_total" })}</span>
+            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">
+              {lang.formatMessage({
+                id: "electric_detail_total",
+              })}
+            </span>
+
             <div className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow">
-              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_BigNum">{detail.energy.total}</strong>
-              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">kWh</span>
+              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_BigNum">
+                {detail.energy.total}
+              </strong>
+
+              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">
+                kWh
+              </span>
             </div>
           </div>
 
           <div className="DAT_ElectricDetail_Grid_Card_Divider" />
 
           <div className="DAT_ElectricDetail_Grid_Card_EnergySection">
-            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">{lang.formatMessage({ id: "electric_detail_today" })}</span>
+            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">
+              {lang.formatMessage({
+                id: "electric_detail_today",
+              })}
+            </span>
+
             <div className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow">
-              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_MidNum">{detail.energy.today}</strong>
-              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">kWh</span>
+              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_MidNum">
+                {detail.energy.today}
+              </strong>
+
+              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">
+                kWh
+              </span>
             </div>
           </div>
 
           <div className="DAT_ElectricDetail_Grid_Card_Divider" />
 
           <div className="DAT_ElectricDetail_Grid_Card_EnergySection">
-            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">{lang.formatMessage({ id: "electric_detail_month" })}</span>
+            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">
+              {lang.formatMessage({
+                id: "electric_detail_month",
+              })}
+            </span>
+
             <div className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow">
-              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_MidNum">{detail.energy.month}</strong>
-              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">kWh</span>
+              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_MidNum">
+                {detail.energy.month}
+              </strong>
+
+              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">
+                kWh
+              </span>
             </div>
           </div>
         </section>
@@ -145,7 +762,10 @@ export default function ElectricDetail() {
         {/* Card 2: 3 Khối Công suất */}
         <div className="DAT_ElectricDetail_Grid_PowersCol">
           {detail.powers.map((p, idx) => (
-            <section key={idx} className="DAT_ElectricDetail_Grid_PowersCol_PowerCard">
+            <section
+              key={idx}
+              className="DAT_ElectricDetail_Grid_PowersCol_PowerCard"
+            >
               <h3 className="DAT_ElectricDetail_Grid_PowersCol_PowerCard_TitleCyan">
                 {lang.formatMessage({
                   id:
@@ -156,9 +776,15 @@ export default function ElectricDetail() {
                       : "electric_detail_apparent_power",
                 })}
               </h3>
+
               <div className="DAT_ElectricDetail_Grid_PowersCol_PowerCard_ValueRow">
-                <strong className="DAT_ElectricDetail_Grid_PowersCol_PowerCard_ValueRow_BigNum">{p.value}</strong>
-                <span className="DAT_ElectricDetail_Grid_PowersCol_PowerCard_ValueRow_Unit">{p.unit}</span>
+                <strong className="DAT_ElectricDetail_Grid_PowersCol_PowerCard_ValueRow_BigNum">
+                  {p.value}
+                </strong>
+
+                <span className="DAT_ElectricDetail_Grid_PowersCol_PowerCard_ValueRow_Unit">
+                  {p.unit}
+                </span>
               </div>
             </section>
           ))}
@@ -166,19 +792,39 @@ export default function ElectricDetail() {
 
         {/* Card 3: ĐIỆN ÁP & DÒNG ĐIỆN 3 PHA */}
         <section className="DAT_ElectricDetail_Grid_PhaseCard">
-          <h3>{lang.formatMessage({ id: "electric_detail_phase_title" })}</h3>
+          <h3>
+            {lang.formatMessage({
+              id: "electric_detail_phase_title",
+            })}
+          </h3>
+
           <div className="DAT_ElectricDetail_Grid_PhaseCard_Header">
-            <span>{lang.formatMessage({ id: "electric_detail_voltage" })}</span>
-            <span>{lang.formatMessage({ id: "electric_detail_current" })}</span>
+            <span>
+              {lang.formatMessage({
+                id: "electric_detail_voltage",
+              })}
+            </span>
+
+            <span>
+              {lang.formatMessage({
+                id: "electric_detail_current",
+              })}
+            </span>
           </div>
 
           <div className="DAT_ElectricDetail_Grid_PhaseCard_List">
             {detail.phases.map((phase) => (
-              <div key={phase.phase} className="DAT_ElectricDetail_Grid_PhaseCard_List_Item">
+              <div
+                key={phase.phase}
+                className="DAT_ElectricDetail_Grid_PhaseCard_List_Item"
+              >
                 <div className="DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol">
-                  <div className={`DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge_${phase.color}`}>
+                  <div
+                    className={`DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge_${phase.color}`}
+                  >
                     {phase.phase}
                   </div>
+
                   <small>{phase.subLabel}</small>
                 </div>
 
@@ -187,7 +833,10 @@ export default function ElectricDetail() {
                     <strong>{phase.voltage}</strong>
                     <span>V</span>
                   </div>
-                  <div className={`DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar_${phase.color}`} />
+
+                  <div
+                    className={`DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar_${phase.color}`}
+                  />
                 </div>
 
                 <div className="DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol">
@@ -195,6 +844,7 @@ export default function ElectricDetail() {
                     <strong>{phase.current}</strong>
                     <span>A</span>
                   </div>
+
                   <div className="DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar_orange" />
                 </div>
               </div>
@@ -203,15 +853,30 @@ export default function ElectricDetail() {
 
           <div className="DAT_ElectricDetail_Grid_PhaseCard_Legend">
             <span className="dot dot-purple"></span>
-            <label>{lang.formatMessage({ id: "electric_detail_voltage_legend" })}</label>
+            <label>
+              {lang.formatMessage({
+                id: "electric_detail_voltage_legend",
+              })}
+            </label>
+
             <span className="dot dot-orange"></span>
-            <label>{lang.formatMessage({ id: "electric_detail_current_legend" })}</label>
+
+            <label>
+              {lang.formatMessage({
+                id: "electric_detail_current_legend",
+              })}
+            </label>
           </div>
         </section>
 
         {/* Card 4: CHẤT LƯỢNG ĐIỆN NĂNG */}
         <section className="DAT_ElectricDetail_Grid_PhaseCard">
-          <h3>{lang.formatMessage({ id: "electric_detail_quality_title" })}</h3>
+          <h3>
+            {lang.formatMessage({
+              id: "electric_detail_quality_title",
+            })}
+          </h3>
+
           <div className="DAT_ElectricDetail_Grid_PhaseCard_Header">
             <span>THDv (%)</span>
             <span>THDi (%)</span>
@@ -219,11 +884,17 @@ export default function ElectricDetail() {
 
           <div className="DAT_ElectricDetail_Grid_PhaseCard_List">
             {detail.quality.map((phase) => (
-              <div key={phase.phase} className="DAT_ElectricDetail_Grid_PhaseCard_List_Item">
+              <div
+                key={phase.phase}
+                className="DAT_ElectricDetail_Grid_PhaseCard_List_Item"
+              >
                 <div className="DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol">
-                  <div className={`DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge_${phase.color}`}>
+                  <div
+                    className={`DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge DAT_ElectricDetail_Grid_PhaseCard_List_Item_BadgeCol_Badge_${phase.color}`}
+                  >
                     {phase.phase}
                   </div>
+
                   <small>{phase.subLabel}</small>
                 </div>
 
@@ -232,6 +903,7 @@ export default function ElectricDetail() {
                     <strong>{phase.thdv}</strong>
                     <span>%</span>
                   </div>
+
                   <div className="DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar_purple" />
                 </div>
 
@@ -240,6 +912,7 @@ export default function ElectricDetail() {
                     <strong>{phase.thdi}</strong>
                     <span>%</span>
                   </div>
+
                   <div className="DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar DAT_ElectricDetail_Grid_PhaseCard_List_Item_MetricCol_Bar_orange" />
                 </div>
               </div>
@@ -249,20 +922,132 @@ export default function ElectricDetail() {
           <div className="DAT_ElectricDetail_Grid_PhaseCard_Legend">
             <span className="dot dot-purple"></span>
             <label>THDv</label>
+
             <span className="dot dot-orange"></span>
             <label>THDi</label>
           </div>
         </section>
       </div>
 
-      {/* Chart Section */}
-      <section className="DAT_ElectricDetail_ChartCard">
-        <h3 className="DAT_ElectricDetail_ChartCard_Title">{lang.formatMessage({ id: "electric_detail_chart_title" })}</h3>
-        <p className="DAT_ElectricDetail_ChartCard_Sub">{lang.formatMessage({ id: "electric_detail_chart_subtitle" })}</p>
-        <div className="DAT_ElectricDetail_ChartCard_Wrap">
-          <Line data={chartData} options={chartOptions} />
+      {/* =========================
+          TREND CHART - CHỈ ELECTRIC
+      ========================= */}
+
+      <div className="DAT_ElectricDetail_TrendCard">
+        <div className="DAT_ElectricDetail_TrendCard_Charts">
+          {/* Instant Chart */}
+          <div className="DAT_ElectricDetail_TrendCard_Charts_Instant">
+            <div className="DAT_ElectricDetail_TrendCard_Charts_Instant_Header">
+              <div className="DAT_ElectricDetail_TrendCard_Charts_Instant_Header_Label">
+                <span className="DAT_ElectricDetail_TrendCard_Charts_Instant_Header_Title">
+                  {lang.formatMessage({ id: "dashboard_trend_instant" })}
+                </span>
+                <span className="DAT_ElectricDetail_TrendCard_Charts_Instant_Header_Unit">
+                  ({currentTrend.instantUnit})
+                </span>
+              </div>
+
+              <input
+                className="DAT_ElectricDetail_TrendCard_Charts_Instant_Header_Date"
+                type="date"
+                value={instantDate}
+                max={getToday()}
+                onChange={(event) => setInstantDate(event.target.value)}
+                aria-label="Chọn ngày"
+              />
+
+              <button
+                className="DAT_ElectricDetail_TrendCard_Charts_Instant_Header_Export"
+                type="button"
+              >
+                <FaDownload />
+                Export
+              </button>
+            </div>
+
+            <div className="DAT_ElectricDetail_TrendCard_Charts_Instant_Content">
+              <Line
+                ref={instantChartRef}
+                data={instantTrendData}
+                options={instantTrendOptions}
+                plugins={[instantExtremaLabels]}
+                onDoubleClick={() => instantChartRef.current?.resetZoom()}
+              />
+            </div>
+          </div>
+
+          <div className="DAT_ElectricDetail_TrendCard_Charts_Line" />
+
+          {/* Accumulated Chart */}
+          <div className="DAT_ElectricDetail_TrendCard_Charts_Accumulated">
+            {/* HEADER */}
+            <div className="DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header">
+              <div className="DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Title">
+                <span>
+                  {lang.formatMessage({
+                    id: "dashboard_trend_accumulated",
+                  })}
+                </span>
+                <span className="DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Title_Unit">
+                  ({currentTrend.accumulatedUnit})
+                </span>
+              </div>
+
+              <div className="DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Actions">
+                {compareText && (
+                  <span
+                    className="DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Compare"
+                    style={{
+                      color: compareColor,
+                    }}
+                  >
+                    {compareText}
+                  </span>
+                )}
+
+                <div className="DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Period">
+                  <button
+                    type="button"
+                    className={`DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Period_Item ${
+                      accumulatedPeriod === "week"
+                        ? "DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Period_Item_Active"
+                        : ""
+                    }`}
+                    onClick={() => setAccumulatedPeriod("week")}
+                  >
+                    {lang.formatMessage({ id: "dashboard_trend_week" })}
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Period_Item ${
+                      accumulatedPeriod === "year"
+                        ? "DAT_ElectricDetail_TrendCard_Charts_Accumulated_Header_Period_Item_Active"
+                        : ""
+                    }`}
+                    onClick={() => setAccumulatedPeriod("year")}
+                  >
+                    {lang.formatMessage({
+                      id: "dashboard_trend_year",
+                    })}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* CHART */}
+            <div className="DAT_ElectricDetail_TrendCard_Charts_Accumulated_Content">
+              <Bar
+                ref={accumulatedChartRef}
+                data={accumulatedTrendData}
+                options={accumulatedTrendOptions}
+                plugins={[ChartDataLabels, barHoverBackground]}
+                onDoubleClick={() => accumulatedChartRef.current?.resetZoom()}
+              />
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
