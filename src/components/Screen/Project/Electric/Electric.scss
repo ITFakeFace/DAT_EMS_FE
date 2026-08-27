@@ -1,9 +1,9 @@
 @keyframes flowLineHorizontal {
   0% {
-    background-position: -200px 0;
+    background-position: -150% 0;
   }
   100% {
-    background-position: 200px 0;
+    background-position: 250% 0;
   }
 }
 
@@ -27,7 +27,6 @@
   padding: 16px 24px;
   box-sizing: border-box;
 
-  // Tag nằm góc ngoài cùng bên trái màn hình
   &_TextHeader {
     display: flex;
     position: absolute;
@@ -62,6 +61,7 @@
         box-shadow: 0px 0px 20px rgba(34, 211, 238, 0.4);
       }
     }
+
     &_SystemTag {
       display: inline-flex;
       align-items: center;
@@ -91,6 +91,52 @@
     margin-bottom: 20px;
     width: 100%;
     min-height: 36px;
+    gap: 12px;
+
+    &_RoiBtn {
+      height: 36px;
+      padding: 0px 14px;
+      border-radius: 6px;
+      background: rgba(8, 17, 43, 1);
+      border: 1px solid rgba(0, 130, 202, 0.6);
+      color: rgba(148, 163, 184, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0px 0px 10px rgba(0, 130, 202, 0.2);
+
+      svg {
+        width: 16px;
+        height: 16px;
+        color: rgba(148, 163, 184, 1);
+        transition: 0.2s ease;
+      }
+
+      &:hover {
+        background: rgba(13, 30, 69, 1);
+        border-color: rgba(34, 211, 238, 0.8);
+        color: rgba(255, 255, 255, 1);
+
+        svg {
+          color: rgba(34, 211, 238, 1);
+        }
+      }
+
+      &.active {
+        background: rgba(0, 130, 202, 0.25);
+        border-color: rgba(34, 211, 238, 1);
+        color: rgba(34, 211, 238, 1);
+        box-shadow: 0px 0px 16px rgba(34, 211, 238, 0.5);
+
+        svg {
+          color: rgba(34, 211, 238, 1);
+        }
+      }
+    }
 
     &_AddRootBtn {
       height: 36px;
@@ -163,6 +209,7 @@
           border-color: rgba(34, 211, 238, 1);
           box-shadow: 0px 0px 20px rgba(34, 211, 238, 0.4);
         }
+
         &:disabled {
           opacity: 0.4;
           cursor: not-allowed;
@@ -172,42 +219,44 @@
 
     &_ScrollContainer {
       width: 100%;
-      overflow-x: auto;
-      overflow-y: hidden;
+      min-width: 0;
+      overflow: auto;
       padding: 10px 0px;
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
 
       &::-webkit-scrollbar {
         height: 8px;
+        width: 8px;
       }
+
       &::-webkit-scrollbar-track {
         background: rgba(8, 17, 43, 0.8);
         border-radius: 4px;
       }
+
       &::-webkit-scrollbar-thumb {
         background: rgba(0, 130, 202, 0.5);
         border: 1px solid rgba(34, 211, 238, 0.6);
         border-radius: 4px;
       }
+
       &::-webkit-scrollbar-thumb:hover {
         background: rgba(34, 211, 238, 0.8);
       }
 
       &_MainBoard {
         position: relative;
-        width: 100%;
-        max-width: 96%;
+        width: max-content;
+        min-width: 100%;
         min-height: 480px;
         border: 1.5px solid rgba(34, 211, 238, 0.4);
         border-radius: 16px;
         padding: 36px 20px 28px;
-        background: radial-gradient(
-          circle at 50% 50%,
-          rgba(10, 28, 68, 0.45) 0%,
-          rgba(4, 9, 24, 0.95) 100%
-        );
+        background: radial-gradient(circle at 50% 50%,
+            rgba(10, 28, 68, 0.45) 0%,
+            rgba(4, 9, 24, 0.95) 100%);
         box-shadow:
           inset 0px 0px 40px rgba(0, 130, 202, 0.15),
           0px 0px 20px rgba(0, 130, 202, 0.1);
@@ -215,11 +264,65 @@
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
+        flex: 0 0 max-content;
+        margin: 0px auto;
 
         &_Canvas {
           display: flex;
           justify-content: center;
-          width: 100%;
+          width: max-content;
+          min-width: max-content;
+          flex: 0 0 max-content;
+        }
+
+        .DAT_Electric_RoiBox {
+          position: absolute;
+          border: 1.5px dashed rgba(255, 255, 0, 1);
+          background: rgba(0, 130, 202, 0.04);
+          border-radius: 14px;
+          box-shadow: inset 0px 0px 20px rgba(0, 130, 202, 0.08);
+          transition: all 0.2s ease;
+          padding: 20px;
+          box-sizing: border-box;
+          pointer-events: none !important;
+
+          &_Badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(8, 17, 43, 1);
+            border: 1px solid rgba(255, 255, 0, 1);
+            box-shadow: 0px 0px 10px rgba(34, 211, 238, 0.25);
+            color: rgba(255, 255, 0, 1);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.8px;
+            white-space: nowrap;
+            pointer-events: auto !important;
+
+            svg {
+              cursor: pointer;
+              color: rgba(148, 163, 184, 1);
+              transition: 0.2s ease;
+              pointer-events: auto !important;
+            }
+          }
+        }
+
+        .DAT_Electric_RoiDrawingBox {
+          position: absolute;
+          border: 1.5px dashed rgba(52, 211, 153, 0.95);
+          background: rgba(16, 185, 129, 0.1);
+          box-shadow: 0px 0px 12px rgba(52, 211, 153, 0.25);
+          border-radius: 12px;
+          pointer-events: none;
+          z-index: 15;
         }
       }
     }
@@ -229,11 +332,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
+    width: max-content;
 
     &_Root {
       .DAT_Electric_Branch_NodeWrapper_Card {
-        width: 270px;
+        width: 300px;
         background: rgba(8, 20, 44, 1);
         border: 1.5px solid rgba(34, 211, 238, 0.7);
         box-shadow: 0px 0px 20px rgba(0, 130, 202, 0.35);
@@ -242,28 +345,14 @@
       }
     }
 
-    // VÙNG NGOÀI SHOWROOM
     &_ZoneRoot {
       position: relative;
-      border: 1.5px dashed rgba(34, 211, 238, 0.6);
-      border-radius: 12px;
-      padding: 30px 24px 20px;
-      background: rgba(0, 130, 202, 0.08);
-      box-shadow: 0px 0px 18px rgba(34, 211, 238, 0.15);
+      border: none;
       display: flex;
       flex-direction: column;
       align-items: center;
+      width: max-content;
       z-index: 2;
-
-      &_Label {
-        position: absolute;
-        top: 8px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.8px;
-        color: rgba(251, 191, 36, 1);
-        text-transform: uppercase;
-      }
     }
 
     &_NodeWrapper {
@@ -286,11 +375,13 @@
         border: 1px solid rgba(0, 130, 202, 1);
         border-radius: 6px;
         padding: 10px 12px;
-        width: 195px;
+        width: 220px;
         box-shadow: 0px 0px 12px rgba(0, 130, 202, 0.25);
         transition: all 0.2s ease;
         cursor: pointer;
         box-sizing: border-box;
+        position: relative;
+        z-index: 10;
 
         &:hover {
           border-color: rgba(34, 211, 238, 1);
@@ -398,7 +489,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 5;
+        z-index: 15;
         cursor: pointer;
 
         svg {
@@ -413,20 +504,17 @@
       }
     }
 
-    // Đoạn dây điện chạy dọc từ MCB Tổng đè xuyên qua viền nét đứt
     &_LineDown {
       position: relative;
       width: 2px;
-      height: 46px;
-      margin: 0px auto -30px auto;
+      height: 48px;
+      margin: 0px auto;
       background-color: rgba(0, 130, 202, 0.4);
-      background-image: linear-gradient(
-        180deg,
-        transparent 0%,
-        rgba(34, 211, 238, 1) 50%,
-        rgba(255, 255, 255, 1) 75%,
-        transparent 100%
-      );
+      background-image: linear-gradient(180deg,
+          transparent 0%,
+          rgba(34, 211, 238, 1) 50%,
+          rgba(255, 255, 255, 1) 75%,
+          transparent 100%);
       background-repeat: no-repeat;
       background-size: 100% 60px;
       animation: flowLineVertical 1.4s linear infinite;
@@ -456,46 +544,30 @@
       display: flex;
       justify-content: center;
       position: relative;
-      width: 100%;
+      width: max-content;
 
-      // VÙNG TRONG SHOWROOM
       &_ZoneChildren {
         position: relative;
-        border: 1.5px dashed rgba(34, 211, 238, 0.4);
-        border-radius: 12px;
-        padding: 30px 16px 32px;
-        background: rgba(0, 20, 50, 0.25);
-        box-shadow: 0px 0px 20px rgba(0, 130, 202, 0.1);
+        border: none;
         display: flex;
         flex-direction: column;
         align-items: center;
-        width: 100%;
+        width: max-content;
         box-sizing: border-box;
         z-index: 1;
-
-        &_Label {
-          position: absolute;
-          bottom: 8px;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.8px;
-          color: rgba(251, 191, 36, 1);
-          text-transform: uppercase;
-        }
 
         &_Grid {
           display: flex;
           justify-content: center;
           position: relative;
-          width: 100%;
+          width: max-content;
 
-          // Trục ngang phân nhánh nối liền mạch
           &_Col {
             display: flex;
             flex-direction: column;
             align-items: center;
             position: relative;
-            padding: 0px 12px;
+            padding: 0px 40px;
             z-index: 2;
 
             &::before,
@@ -505,13 +577,11 @@
               top: 0px;
               height: 2px;
               background-color: rgba(0, 130, 202, 0.4);
-              background-image: linear-gradient(
-                90deg,
-                transparent 0%,
-                rgba(34, 211, 238, 1) 50%,
-                rgba(255, 255, 255, 1) 75%,
-                transparent 100%
-              );
+              background-image: linear-gradient(90deg,
+                  transparent 0%,
+                  rgba(34, 211, 238, 1) 50%,
+                  rgba(255, 255, 255, 1) 75%,
+                  transparent 100%);
               background-repeat: no-repeat;
               background-size: 80px 100%;
               animation: flowLineHorizontal 2s linear infinite;
@@ -530,6 +600,24 @@
               right: 0px;
             }
 
+            &--left::before,
+            &--left::after {
+              animation-direction: reverse;
+            }
+
+            &--center::before {
+              animation-direction: reverse;
+            }
+
+            &--center::after {
+              animation-direction: normal;
+            }
+
+            &--right::before,
+            &--right::after {
+              animation-direction: normal;
+            }
+
             &:first-child::before {
               display: none;
             }
@@ -543,20 +631,17 @@
               display: none;
             }
 
-            // Đoạn dây điện chạy từ trục ngang đi xuống trạm con
             &_LineUp {
               position: relative;
               width: 2px;
-              height: 32px;
-              margin: 0px auto 8px auto;
+              height: 48px;
+              margin: 0px auto 12px auto;
               background-color: rgba(0, 130, 202, 0.4);
-              background-image: linear-gradient(
-                180deg,
-                transparent 0%,
-                rgba(34, 211, 238, 1) 50%,
-                rgba(255, 255, 255, 1) 75%,
-                transparent 100%
-              );
+              background-image: linear-gradient(180deg,
+                  transparent 0%,
+                  rgba(34, 211, 238, 1) 50%,
+                  rgba(255, 255, 255, 1) 75%,
+                  transparent 100%);
               background-repeat: no-repeat;
               background-size: 100% 60px;
               animation: flowLineVertical 1.4s linear infinite;
@@ -564,7 +649,6 @@
                 0px 0px 6px rgba(34, 211, 238, 0.8),
                 0px 0px 12px rgba(0, 130, 202, 0.5);
 
-              // Chốt phát sáng trên thanh ngang
               &::before {
                 content: "";
                 position: absolute;
@@ -584,6 +668,8 @@
     }
   }
 
+
+
   &_PageIndicator {
     margin-top: 14px;
     display: inline-block;
@@ -596,7 +682,6 @@
     font-weight: 700;
   }
 
-  // MODAL CRUD
   &_ModalOverlay {
     position: fixed;
     inset: 0px;
