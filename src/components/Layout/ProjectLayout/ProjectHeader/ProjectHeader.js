@@ -22,9 +22,7 @@ export default function ProjectHeader({ onAlarmClick }) {
   const userRef = useRef(null);
   const lanRef = useRef(null);
   const alarmRef = useRef(null);
-  const [currentDateTime, setCurrentDateTime] = useState(
-    new Date(2026, 7, 24, 14, 56, 50),
-  );
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   const currentLanguageLabel = locale === "vi" ? "VI" : "ENG";
   const languageOptions = [

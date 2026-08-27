@@ -1481,9 +1481,16 @@
 
         &_Header {
           height: 24px;
-          display: flex;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
           align-items: center;
           gap: 8px;
+
+          &_Label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
 
           &_Title {
             // line-height: 1.25rem;
@@ -1499,6 +1506,75 @@
             font-size: 9px;
             font-weight: 600;
             color: var(--pd-text-white-50);
+          }
+
+          &_Date {
+            height: 28px;
+            padding: 0 9px;
+            border: 1px solid var(--pd-blue-600);
+            border-radius: 6px;
+            background: var(--pd-bg-950);
+            color: var(--pd-text-white);
+            color-scheme: dark;
+            font-size: 10px;
+            outline: none;
+          }
+
+          &_Export {
+            justify-self: end;
+            height: 28px;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(56, 189, 248, 0.72);
+            border-radius: var(--radius-full);
+            background:
+              radial-gradient(
+                ellipse 80% 130% at 50% -30%,
+                rgba(56, 189, 248, 0.38),
+                rgba(37, 99, 235, 0.15) 58%,
+                transparent 82%
+              ),
+              var(--pd-bg-950);
+            color: rgb(186, 230, 253);
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow:
+              inset 0 1px 2px rgba(255, 255, 255, 0.18),
+              0 0 7px rgba(56, 189, 248, 0.48),
+              0 0 14px rgba(37, 99, 235, 0.2);
+            text-shadow: 0 0 6px rgba(125, 211, 252, 0.8);
+            transition:
+              color var(--transition-base),
+              border-color var(--transition-base),
+              box-shadow var(--transition-base),
+              background var(--transition-base);
+
+            &:hover {
+              color: rgb(240, 249, 255);
+              border-color: rgb(125, 211, 252);
+              background:
+                radial-gradient(
+                  ellipse 85% 140% at 50% -25%,
+                  rgba(56, 189, 248, 0.55),
+                  rgba(37, 99, 235, 0.22) 60%,
+                  transparent 84%
+                ),
+                var(--pd-bg-950);
+              box-shadow:
+                inset 0 1px 2px rgba(255, 255, 255, 0.25),
+                0 0 9px rgba(56, 189, 248, 0.72),
+                0 0 18px rgba(37, 99, 235, 0.35);
+            }
+
+            &:active {
+              transform: translateY(1px);
+              box-shadow:
+                inset 0 1px 3px rgba(0, 0, 0, 0.35),
+                0 0 6px rgba(56, 189, 248, 0.55);
+            }
           }
         }
 
@@ -1519,43 +1595,237 @@
 
       &_Accumulated {
         flex: 1;
+        min-width: 0;
+
+        display: flex;
+        flex-direction: column;
+
+        // Khi chọn CO2:
+        // chart chiếm toàn bộ chiều ngang
+        &_CO2 {
+          width: 100%;
+          flex: 1;
+        }
 
         &_Header {
-          height: 24px;
+          height: 30px;
+
           display: flex;
           align-items: center;
           justify-content: space-between;
+
           gap: 16px;
 
           &_Title {
             display: flex;
             align-items: center;
+
             gap: 8px;
-            // font-size: 12px;
+
             font-weight: 700;
+
             color: var(--pd-text-white);
-            // padding-top: -10px;
 
             &_Unit {
+              padding-top: 8px;
+
               font-family: var(--pd-font-mono);
+
               font-size: 9px;
               font-weight: 600;
+
               color: var(--pd-text-white-50);
-              padding-top: 10px;
             }
           }
+
+          // =====================================
+          // RIGHT SIDE
+          // =====================================
+
+          &_Actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+
+            gap: 14px;
+          }
+
+          &_MonthPicker {
+            height: 30px;
+            padding: 0 10px;
+            border: 1px solid rgba(59, 130, 246, 0.45);
+            border-radius: var(--radius-full);
+            outline: none;
+            background: var(--pd-bg-950);
+            color: var(--pd-text-white);
+            color-scheme: dark;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow:
+              inset 0 1px 2px var(--pd-text-white-15),
+              0 0 7px rgba(59, 130, 246, 0.18);
+
+            &:focus,
+            &:hover {
+              border-color: var(--pd-blue-400);
+              box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+            }
+          }
+
+          // =====================================
+          // MONTH / YEAR
+          // =====================================
+
+          &_Period {
+            --period-color: rgb(96, 165, 250);
+            --period-color-soft: rgba(59, 130, 246, 0.15);
+            --period-color-medium: rgba(59, 130, 246, 0.35);
+            --period-color-glow: rgba(59, 130, 246, 0.25);
+
+            height: 30px;
+
+            padding: 3px;
+
+            display: flex;
+            align-items: center;
+
+            gap: 2px;
+
+            border: 1px solid var(--period-color-medium);
+
+            border-radius: var(--radius-full);
+
+            background:
+              radial-gradient(
+                ellipse 60% 110% at 50% -60%,
+                var(--period-color-soft),
+                transparent 75%
+              ),
+              var(--pd-bg-950);
+
+            box-shadow:
+              inset 0 1px 2px var(--pd-text-white-15),
+              0 2px 8px var(--pd-bg-black);
+
+            &_electric {
+              --period-color: var(--pd-blue-400);
+              --period-color-soft: rgba(59, 130, 246, 0.15);
+              --period-color-medium: rgba(59, 130, 246, 0.35);
+              --period-color-glow: rgba(59, 130, 246, 0.25);
+            }
+
+            &_water {
+              --period-color: var(--pd-cyan-400);
+              --period-color-soft: rgba(34, 211, 238, 0.15);
+              --period-color-medium: rgba(34, 211, 238, 0.35);
+              --period-color-glow: rgba(34, 211, 238, 0.25);
+            }
+
+            &_gas {
+              --period-color: var(--pd-amber-500);
+              --period-color-soft: rgba(245, 158, 11, 0.15);
+              --period-color-medium: rgba(245, 158, 11, 0.35);
+              --period-color-glow: rgba(245, 158, 11, 0.25);
+            }
+
+            &_co2 {
+              --period-color: var(--pd-emerald-400);
+              --period-color-soft: rgba(52, 211, 153, 0.15);
+              --period-color-medium: rgba(52, 211, 153, 0.35);
+              --period-color-glow: rgba(52, 211, 153, 0.25);
+            }
+
+            &_Item {
+              min-width: 62px;
+              height: 22px;
+
+              padding: 0 12px;
+
+              border: 1px solid transparent;
+
+              border-radius: var(--radius-full);
+
+              display: flex;
+              align-items: center;
+              justify-content: center;
+
+              background: transparent;
+
+              color: var(--pd-text-400);
+
+              font-size: 10px;
+              font-weight: 700;
+
+              cursor: pointer;
+
+              transition:
+                color var(--transition-base),
+                border-color var(--transition-base),
+                background var(--transition-base),
+                box-shadow var(--transition-base);
+
+              &:hover {
+                color: var(--period-color);
+
+                background: var(--period-color-soft);
+              }
+
+              &_Active {
+                color: var(--period-color);
+
+                border-color: var(--period-color-medium);
+
+                background:
+                  radial-gradient(
+                    ellipse 75% 120% at 50% -35%,
+                    var(--period-color-medium) 0%,
+                    var(--period-color-soft) 50%,
+                    transparent 80%
+                  ),
+                  var(--period-color-soft);
+
+                box-shadow:
+                  inset 0 1px 2px var(--period-color-glow),
+                  0 0 6px var(--period-color-medium);
+
+                &:hover {
+                  color: var(--period-color);
+
+                  border-color: var(--period-color-medium);
+
+                  background:
+                    radial-gradient(
+                      ellipse 75% 120% at 50% -35%,
+                      var(--period-color-medium) 0%,
+                      var(--period-color-soft) 50%,
+                      transparent 80%
+                    ),
+                    var(--period-color-soft);
+                }
+              }
+            }
+          }
+
+          // =====================================
+          // COMPARE
+          // =====================================
 
           &_Compare {
             font-size: 10px;
             font-weight: 700;
-            color: var(--pd-red-500);
+
             white-space: nowrap;
           }
         }
 
         &_Content {
+          position: relative;
+
           flex: 1;
+
           min-height: 0;
+
           margin-top: 8px;
         }
       }
@@ -1570,14 +1840,22 @@
     }
     &_Switch {
       align-self: center;
+
       display: flex;
       align-items: center;
-      width: 390px;
+
+      width: min(540px, 100%);
+
       height: 50px;
+
       padding: 4px;
+
       margin-top: 12px;
+
       border: 1px solid var(--pd-bg-600);
+
       border-radius: var(--radius-full);
+
       background:
         radial-gradient(
           ellipse 55% 90% at 50% -55%,
@@ -1585,6 +1863,7 @@
           transparent 72%
         ),
         var(--pd-bg-950);
+
       box-shadow:
         inset 0 1px 2px var(--pd-text-white-15),
         0 2px 10px var(--pd-bg-black);
@@ -1593,23 +1872,30 @@
         --active-icon-color: var(--pd-blue-400);
 
         flex: 1;
+
         min-width: 0;
+
         height: 40px;
+
         padding: 0 12px;
 
         border: 1px solid transparent;
+
         border-radius: var(--radius-full);
 
         display: flex;
         align-items: center;
         justify-content: center;
+
         gap: 8px;
 
         background: transparent;
+
         color: var(--pd-text-300);
 
         font-size: 12px;
         font-weight: 700;
+
         white-space: nowrap;
 
         cursor: pointer;
@@ -1623,6 +1909,7 @@
         > svg {
           width: 13px;
           height: 13px;
+
           flex-shrink: 0;
 
           color: var(--pd-text-300);
@@ -1634,6 +1921,7 @@
 
         &:hover {
           color: var(--pd-text-white);
+
           background: var(--pd-text-white-15);
 
           > svg {
@@ -1641,21 +1929,33 @@
           }
         }
 
-        // Màu icon theo từng loại
+        // ==================================
+        // MÀU GIỐNG METRIC CARD
+        // ==================================
+
         &_Electric {
-          --active-icon-color: rgb(59, 130, 246);
+          --active-icon-color: var(--pd-blue-400);
         }
 
         &_Water {
-          --active-icon-color: rgb(34, 211, 238);
+          --active-icon-color: var(--pd-cyan-400);
         }
 
         &_Gas {
-          --active-icon-color: rgb(245, 158, 11);
+          --active-icon-color: var(--pd-amber-500);
         }
+
+        &_CO2 {
+          --active-icon-color: var(--pd-emerald-400);
+        }
+
+        // ==================================
+        // ACTIVE
+        // ==================================
 
         &_Active {
           color: var(--pd-text-white);
+
           border-color: var(--pd-text-white-80);
 
           background:
@@ -1673,12 +1973,16 @@
             0 0 4px var(--pd-text-white-20),
             0 0 12px var(--pd-blue-700-50);
 
+          // Icon active lấy màu từng Metric Card
           > svg {
             color: var(--active-icon-color);
+
             filter: drop-shadow(0 0 4px var(--active-icon-color));
           }
 
           &:hover {
+            color: var(--pd-text-white);
+
             background:
               radial-gradient(
                 ellipse 70% 110% at 50% -35%,

@@ -454,7 +454,8 @@ const enMessages = {
   Delete: "delete",
   Recovery: "Recovery",
   role_modal_view_title: "Role Details",
-  alarm_username_wrong: "Username must not contain special characters or spaces.",
+  alarm_username_wrong:
+    "Username must not contain special characters or spaces.",
   alarm_username_wrong_number: "Username must contain at least one letter.",
   alarm_password_number: "Password must contain at least 8 character.",
   user_save_button: "Save",
@@ -622,6 +623,8 @@ const enMessages = {
 
   dashboard_trend_increase: "▲ Increase {percent}% vs yesterday",
   dashboard_trend_decrease: "▼ Decrease {percent}% vs yesterday",
+  dashboard_trend_increase_month: "▲ Increase {percent}% vs previous month",
+  dashboard_trend_decrease_month: "▼ Decrease {percent}% vs previous month",
 
   dashboard_trend_electric: "Electricity",
   dashboard_trend_water: "Water",
@@ -751,6 +754,11 @@ const enMessages = {
   dashboard_grid_electricity_cost: "Grid Electricity Cost",
   dashboard_million_vnd: "Million VND",
 
+  dashboard_trend_co2: "CO₂",
+  dashboard_trend_week: "Week",
+  dashboard_trend_month: "Month",
+  dashboard_trend_year: "Year",
+  dashboard_trend_day: "Day",
   // =========================
   // SYSTEM SETTING
   // =========================
@@ -1264,7 +1272,8 @@ const viMessages = {
   Delete: "Xóa",
   Recovery: "Khôi phục",
   role_modal_view_title: "Chi tiết vai trò",
-  alarm_username_wrong: "Tên tài khoản không được gồm kí tự đặc biệt và khoảng trắng.",
+  alarm_username_wrong:
+    "Tên tài khoản không được gồm kí tự đặc biệt và khoảng trắng.",
   alarm_username_wrong_number: "Tên tài khoản phải gồm ít nhất một chữ cái.",
   alarm_password_number: "Mật khẩu phải ít nhất 8 kí tự",
   user_save_button: "Lưu",
@@ -1434,6 +1443,8 @@ const viMessages = {
 
   dashboard_trend_increase: "▲ Tăng {percent}% so với hôm qua",
   dashboard_trend_decrease: "▼ Giảm {percent}% so với hôm qua",
+  dashboard_trend_increase_month: "▲ Tăng {percent}% so với tháng trước",
+  dashboard_trend_decrease_month: "▼ Giảm {percent}% so với tháng trước",
 
   dashboard_trend_electric: "Điện năng",
   dashboard_trend_water: "Nước",
@@ -1563,6 +1574,11 @@ const viMessages = {
   dashboard_grid_electricity_cost: "Chi phí điện lưới",
   dashboard_million_vnd: "Triệu VND",
 
+  dashboard_trend_co2: "CO₂",
+  dashboard_trend_week: "Tuần",
+  dashboard_trend_month: "Tháng",
+  dashboard_trend_year: "Năm",
+  dashboard_trend_day: "Ngày",
   // =========================
   // SYSTEM SETTING
   // =========================
