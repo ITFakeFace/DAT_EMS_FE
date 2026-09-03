@@ -50,7 +50,7 @@ const menuGroups = [
     mobileIcon: <LuSettings />,
     items: [
       {
-        path: "/alarm-management",
+        path: "/report",
         icon: <MdOutlineCircleNotifications />,
         labelId: "sidebar_item_alarm_management2",
       },
@@ -193,35 +193,80 @@ export default function ProjectSidebar({ collapsed, onToggle }) {
               </div>
             )}
 
-            {group.items.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  collapsed
-                    ? isActive
-                      ? "DAT_ProjectSidebar_Nav_Group_Item_Collapsed_Active"
-                      : "DAT_ProjectSidebar_Nav_Group_Item_Collapsed"
-                    : isActive
-                      ? "DAT_ProjectSidebar_Nav_Group_Item_Active"
-                      : "DAT_ProjectSidebar_Nav_Group_Item"
-                }
-                title={
-                  collapsed
-                    ? lang.formatMessage({ id: item.labelId })
-                    : undefined
-                }
-              >
-                <span className="DAT_ProjectSidebar_Nav_Group_Item_Icon">
-                  {item.icon}
-                </span>
-                {!collapsed && (
-                  <span className="DAT_ProjectSidebar_Nav_Group_Item_Label">
-                    {lang.formatMessage({ id: item.labelId })}
+            {group.items.map((item) => {
+              const isSystemSettings =
+                item.labelId === "sidebar_item_system_settings";
+
+              const menuItem = (
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    collapsed
+                      ? isActive
+                        ? "DAT_ProjectSidebar_Nav_Group_Item_Collapsed_Active"
+                        : "DAT_ProjectSidebar_Nav_Group_Item_Collapsed"
+                      : isActive
+                        ? "DAT_ProjectSidebar_Nav_Group_Item_Active"
+                        : "DAT_ProjectSidebar_Nav_Group_Item"
+                  }
+                  title={
+                    collapsed
+                      ? lang.formatMessage({ id: item.labelId })
+                      : undefined
+                  }
+                >
+                  <span className="DAT_ProjectSidebar_Nav_Group_Item_Icon">
+                    {item.icon}
                   </span>
-                )}
-              </NavLink>
-            ))}
+                  {!collapsed && (
+                    <span className="DAT_ProjectSidebar_Nav_Group_Item_Label">
+                      {lang.formatMessage({ id: item.labelId })}
+                    </span>
+                  )}
+                </NavLink>
+              );
+
+              if (!isSystemSettings) {
+                return (
+                  <React.Fragment key={item.path}>{menuItem}</React.Fragment>
+                );
+              }
+
+              return (
+                <div
+                  key={item.path}
+                  className="DAT_ProjectSidebar_Nav_Group_Settings"
+                >
+                  {menuItem}
+                  <div className="DAT_ProjectSidebar_Nav_Group_Settings_Popup">
+                    <NavLink
+                      to="/settings/emission-electricity"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "DAT_ProjectSidebar_Nav_Group_Settings_Popup_Item_Active"
+                          : "DAT_ProjectSidebar_Nav_Group_Settings_Popup_Item"
+                      }
+                    >
+                      {lang.formatMessage({
+                        id: "sidebar_settings_emission_electricity",
+                      })}
+                    </NavLink>
+                    <NavLink
+                      to="/settings/alarm-threshold"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "DAT_ProjectSidebar_Nav_Group_Settings_Popup_Item_Active"
+                          : "DAT_ProjectSidebar_Nav_Group_Settings_Popup_Item"
+                      }
+                    >
+                      {lang.formatMessage({
+                        id: "sidebar_settings_alarm_threshold",
+                      })}
+                    </NavLink>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ))}
       </nav>

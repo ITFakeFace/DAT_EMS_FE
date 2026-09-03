@@ -12,6 +12,7 @@ import CompressedAirDetail from "./components/Screen/Project/CompressedAir/Compr
 import Dashboard from "./components/Screen/Project/Dashboard/Dashboard";
 import SystemSetting from "./components/Screen/Project/SystemSetting/SystemSetting";
 import Alarm_Project from "./components/Screen/Project/Alarm/Alarm";
+import Report from "./components/Screen/Project/Report/Report";
 import Alarm from "./components/Screen/Alarm/Alarm";
 import { signal } from "@preact/signals-react";
 import { io } from "socket.io-client";
@@ -57,7 +58,21 @@ function App() {
           />
 
           <Route path="/alarm-management" element={<Alarm_Project />} />
-          <Route path="/settings" element={<SystemSetting />} />
+          <Route path="/report" element={<Report />} />
+          <Route
+            path="/settings"
+            element={
+              <Navigate to="/settings/emission-electricity" replace />
+            }
+          />
+          <Route
+            path="/settings/emission-electricity"
+            element={<SystemSetting />}
+          />
+          <Route
+            path="/settings/alarm-threshold"
+            element={<Alarm_Project />}
+          />
           <Route path="/project/:projectId" element={<EmptyPage />} />
         </Route>
 

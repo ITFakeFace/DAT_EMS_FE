@@ -10,7 +10,7 @@
   flex-direction: column;
   z-index: var(--z-sidebar);
   transition: width var(--transition-slow);
-  overflow: hidden;
+  overflow: visible;
 
   &_Collapsed {
     width: var(--sidebar-collapsed-width);
@@ -56,11 +56,78 @@
 
   &_Nav {
     flex: 1;
-    overflow-y: auto;
+    overflow: visible;
     padding: 8px;
 
     &_Group {
       margin-bottom: 8px;
+
+      &_Settings {
+        position: relative;
+
+        &_Popup {
+          position: absolute;
+          left: calc(100% + 10px);
+          top: 50%;
+          width: max-content;
+          min-width: 275px;
+          padding: 7px;
+          border: 1px solid var(--pd-bg-700);
+          border-radius: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          background: var(--pd-bg-950);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transform: translate(-4px, -50%);
+          transition:
+            opacity var(--transition-fast),
+            transform var(--transition-fast),
+            visibility var(--transition-fast);
+          z-index: calc(var(--z-sidebar) + 1);
+
+          &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 100%;
+            width: 11px;
+            height: 100%;
+          }
+
+          &_Item,
+          &_Item_Active {
+            padding: 13px 14px;
+            border-radius: 11px;
+            color: var(--pd-text-white);
+            font-size: 13px;
+            font-weight: var(--font-weight-semibold);
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all var(--transition-fast);
+
+            &:hover {
+              background: var(--pd-amber-400);
+              color: var(--pd-bg-950);
+            }
+          }
+
+          &_Item_Active {
+            color: var(--pd-amber-400);
+          }
+        }
+
+        &:hover &_Popup,
+        &:focus-within &_Popup {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transform: translate(0, -50%);
+        }
+      }
 
       &_Label {
         font-size: 10.88px;
