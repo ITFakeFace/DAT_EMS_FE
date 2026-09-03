@@ -146,6 +146,13 @@ const defaultElectricDetail = {
     total: "25.647,59",
     today: "89,99",
     month: "5.652,61",
+    year: "25.647,59",
+    yesterday: "77,05",
+    previousMonth: "5.865,97",
+    previousYear: "4.328,12",
+    dayChange: "+16,79%",
+    monthChange: "-3,62%",
+    yearChange: "+492,29%",
   },
   powers: [
     { label: "Công suất tiêu thụ", value: "6,64", unit: "kW" },

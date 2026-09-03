@@ -49,10 +49,61 @@
     }
   }
 
-  /* Grid 4 Cột */
+  &_EnergyOverview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 14px;
+    padding: 22px 20px;
+    border: 1px solid rgba(19, 43, 92, 1);
+    border-radius: 10px;
+    background: rgba(8, 17, 46, 1);
+
+    &_Item {
+      min-width: 0;
+      padding: 0 14px;
+
+      & + & { border-left: 1px solid rgba(54, 74, 110, 0.55); }
+
+      &_Value {
+        display: block;
+        color: rgba(0, 210, 255, 1);
+        font-size: clamp(24px, 2vw, 34px);
+        line-height: 1.1;
+        letter-spacing: 1px;
+      }
+
+      &_Label,
+      &_Compare span {
+        display: block;
+        margin-top: 8px;
+        color: rgba(139, 171, 207, 1);
+        font-size: 11px;
+      }
+
+      &_Divider {
+        height: 1px;
+        margin: 20px 0 14px;
+        background: rgba(54, 74, 110, 0.45);
+      }
+
+      &_Compare {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+
+        > div > strong { font-size: 17px; }
+        > strong { font-size: 14px; white-space: nowrap; }
+        .is-positive { color: rgb(52, 211, 153); }
+        .is-negative { color: rgb(251, 113, 133); }
+      }
+    }
+  }
+
+  /* Grid: power column + two phase cards */
   &_Grid {
     display: grid;
-    grid-template-columns: 1.15fr 1.15fr 1.35fr 1.35fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
     margin-bottom: 14px;
 
@@ -127,13 +178,14 @@
         border: 1px solid rgba(19, 43, 92, 1);
         border-radius: 8px;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
         flex: 1;
         padding: 10px 16px;
 
         &_TitleCyan {
-          margin: 0px 0px 4px;
+          margin: 0;
           font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.4px;

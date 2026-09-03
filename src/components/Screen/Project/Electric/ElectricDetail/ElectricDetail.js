@@ -332,6 +332,33 @@ export default function ElectricDetail() {
     ? "rgb(239, 68, 68)"
     : currentTrend.solidColor;
 
+  const energySummaries = [
+    {
+      key: "day",
+      value: detail.energy.today,
+      labelId: "electric_detail_today",
+      previous: detail.energy.yesterday,
+      previousLabelId: "electric_detail_yesterday",
+      change: detail.energy.dayChange,
+    },
+    {
+      key: "month",
+      value: detail.energy.month,
+      labelId: "electric_detail_month",
+      previous: detail.energy.previousMonth,
+      previousLabelId: "electric_detail_previous_month",
+      change: detail.energy.monthChange,
+    },
+    {
+      key: "year",
+      value: detail.energy.year || detail.energy.total,
+      labelId: "electric_detail_year",
+      previous: detail.energy.previousYear,
+      previousLabelId: "electric_detail_previous_year",
+      change: detail.energy.yearChange,
+    },
+  ];
+
   // ================================
   // CHART DATA & OPTIONS
   // ================================
@@ -690,76 +717,35 @@ export default function ElectricDetail() {
         </h2>
       </div>
 
-      {/* 4 Cards Grid */}
+      <section className="DAT_ElectricDetail_EnergyOverview">
+        {energySummaries.map((item) => {
+          const isNegative = item.change?.startsWith("-");
+          return (
+            <div key={item.key} className="DAT_ElectricDetail_EnergyOverview_Item">
+              <strong className="DAT_ElectricDetail_EnergyOverview_Item_Value">
+                {item.value}
+              </strong>
+              <span className="DAT_ElectricDetail_EnergyOverview_Item_Label">
+                {lang.formatMessage({ id: item.labelId })} (kWh)
+              </span>
+              <div className="DAT_ElectricDetail_EnergyOverview_Item_Divider" />
+              <div className="DAT_ElectricDetail_EnergyOverview_Item_Compare">
+                <div>
+                  <strong>{item.previous}</strong>
+                  <span>{lang.formatMessage({ id: item.previousLabelId })} (kWh)</span>
+                </div>
+                <strong className={isNegative ? "is-negative" : "is-positive"}>
+                  {isNegative ? "↘" : "↗"} {item.change}
+                </strong>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* Power and phase cards */}
       <div className="DAT_ElectricDetail_Grid">
-        {/* Card 1: Điện năng tiêu thụ */}
-        <section className="DAT_ElectricDetail_Grid_Card">
-          <h3 className="DAT_ElectricDetail_Grid_Card_TitleCyan">
-            {lang.formatMessage({
-              id: "electric_detail_energy_title",
-            })}
-          </h3>
-
-          <div className="DAT_ElectricDetail_Grid_Card_EnergySection">
-            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">
-              {lang.formatMessage({
-                id: "electric_detail_total",
-              })}
-            </span>
-
-            <div className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow">
-              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_BigNum">
-                {detail.energy.total}
-              </strong>
-
-              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">
-                kWh
-              </span>
-            </div>
-          </div>
-
-          <div className="DAT_ElectricDetail_Grid_Card_Divider" />
-
-          <div className="DAT_ElectricDetail_Grid_Card_EnergySection">
-            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">
-              {lang.formatMessage({
-                id: "electric_detail_today",
-              })}
-            </span>
-
-            <div className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow">
-              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_MidNum">
-                {detail.energy.today}
-              </strong>
-
-              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">
-                kWh
-              </span>
-            </div>
-          </div>
-
-          <div className="DAT_ElectricDetail_Grid_Card_Divider" />
-
-          <div className="DAT_ElectricDetail_Grid_Card_EnergySection">
-            <span className="DAT_ElectricDetail_Grid_Card_EnergySection_Label">
-              {lang.formatMessage({
-                id: "electric_detail_month",
-              })}
-            </span>
-
-            <div className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow">
-              <strong className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_MidNum">
-                {detail.energy.month}
-              </strong>
-
-              <span className="DAT_ElectricDetail_Grid_Card_EnergySection_ValueRow_Unit">
-                kWh
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Card 2: 3 Khối Công suất */}
+        {/* 3 power cards */}
         <div className="DAT_ElectricDetail_Grid_PowersCol">
           {detail.powers.map((p, idx) => (
             <section
